@@ -1,11 +1,88 @@
 <!DOCTYPE html>
-<html>
-	<head>
-		<title>Akshay</title>
-        <link rel="stylesheet" href="styles.css">
-	</head>
-	<body>
-		<h1>This is Akshay's GitHub IO page</h1>
-		<h2>Also check out <a href="http://www.ak5hay.com/">ak5hay.com</a></h2>	
-	</body>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, intial-scale=1">
+        <style>
+
+        </style>
+    </head>
+    <body>
+        <button onclick="enrollNewProfile();">Create Identification Profile</button>
+        <button onclick="startListeningForIdentification();">Identify</button>
+        <hr>
+        <label for="audioFileChooser">Create Identification Profile via File Upload</label>
+        <input id="audioFileChooser" type="file" onchange="readFile(this.files);">
+        <hr>
+        <label for="identificationFileChooser">Identify by Uploading Audio File</label>
+        <input id="identificationFileChooser" type="file" onchange="readIdentificationFile(this.files);">
+        <hr>
+        <pre id="log"></pre>
+
+        <script src="core.js"></script>
+        <script src="identification.js"></script>
+        <script src="recorder.js"></script>
+        <script>
+
+            var recorder;
+            var audio_context;
+
+            function onMediaSuccess(stream, callback, secondsOfAudio){
+                audio_context = audio_context || new window.AudioContext;
+                var input = audio_context.createMediaStreamSource(stream);
+                recorder = new Recorder(input);
+                recorder.record();
+
+                setTimeout(() => { StopListening(callback); }, secondsOfAudio * 1000);
+            }
+
+            function onMediaError(e){
+                console.error('media error', e);
+            }
+
+            function StopListening(callback){
+                console.log("...working...");
+                recorder && recorder.stop();
+                recorder.exportWAV(function(blob){
+                    callback(blob);
+                });
+                recorder.clear();
+            }
+
+            function readFile(files){
+                var file = files[0];
+                console.log(file instanceof Blob);
+                var fileReader = new FileReader();
+                fileReader.readAsArrayBuffer(files[0]);
+                fileReader.onload = function(e){
+                    //playAudioFile(e.target.result);
+                    console.log(("Filename: '" + files[0].name + "'"), ("(" + ((Math.floor(files[0].size/1024/1024*100))/100) + "MB)"));
+                }
+                createProfile(file);
+            }
+
+            function playAudioFile(file){
+                var context = new window.AudioContext();
+                context.decodeAudioData(file, function(buffer){
+                    var source = context.createBufferSource();
+                    source.buffer = buffer;
+                    source.loop = false;
+                    source.connect(context.destination);
+                    source.start(0);
+                });
+            }
+
+            function readIdentificationFile(files){
+                var file = files[0];
+                console.log(file instanceof Blob);
+                var fileReader = new FileReader();
+                fileReader.readAsArrayBuffer(files[0]);
+                fileReader.onload = function(e){
+                    //playAudioFile(e.target.result);
+                    console.log(("Filename: '" + files[0].name + "'"), ("(" + ((Math.floor(files[0].size/1024/1024*100))/100) + "MB)"));
+                }
+                identifyProfile(file);
+            }
+        </script>
+    </body>
 </html>
